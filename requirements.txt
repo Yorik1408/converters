@@ -1,0 +1,4 @@
+setuptools
+wheel
+srsly~=2.4.3
+spacy~=3.4.4
