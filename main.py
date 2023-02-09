@@ -20,13 +20,18 @@ def parse_spacy_to_bert_format(source_file: str, result_file: str):
     spacy_data = srsly.read_jsonl(os.getcwd() + '/' + source_file)
     with open(os.getcwd() + '/' + result_file, 'w') as f:
         for data in spacy_data:
-            print(len(data['text']))
             doc = NLP.make_doc(data['text'])
             tags = offsets_to_biluo_tags(doc, data['label'])
             entities = spans_from_biluo_tags(doc, tags)
             doc.ents = entities
+
             for token in doc:
-                f.write(f'{token.text} {token.ent_iob_}-{token.ent_type_}\n')
+                if token.text == ' ':
+                    continue
+                if token.ent_iob_ == 'O':
+                    f.write(f'{token.text} {token.ent_iob_}\n')
+                else:
+                    f.write(f'{token.text} {token.ent_iob_}-{token.ent_type_}\n')
             f.write('\n')
     logging.info(f"work detection algorithm")
 
@@ -58,8 +63,10 @@ def parse_bert_to_spacy_format(source_file: str, result_file: str):
         else:
             text_id += 1
     for line_id, line in text.items():
+        if line == "":
+            continue
         doc = Doc(NLP.vocab, words=line, ents=iob_tags[line_id])
-        labels = [{'start': ent.start_char, 'end': ent.end_char, 'label': ent.label_} for ent in doc.ents]
+        labels = [[ent.start_char, ent.end_char, ent.label_] for ent in doc.ents]
         srsly.write_jsonl(os.getcwd() + '/' + result_file, [{'id': line_id, 'text': doc.text, 'label': labels}],
                           True, False)
     logging.info(f"work detection algorithm")
